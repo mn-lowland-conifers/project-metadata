@@ -1,0 +1,34 @@
+# Point Data Development
+
+## Peat inventory of Minnesota dataset
+
+https://gisdata.mn.gov/dataset/geos-peat-inventory
+
+## ISCN
+
+## NASIS
+
+## Academic sources
+
+## MN Biological Survey Releve Database
+
+
+
+
+- cs
+- fs
+- s
+- s w/ peat
+- sc w/ g
+- si w/ Limnic above
+- si w/Limnic
+- si, s
+- sic
+- sil w/Limnic
+ Min.soil 
+ 
+
+ Peat w/ Limnic above Min.soil
+ Limnic
+ BU
+ - U - May be mineral contact

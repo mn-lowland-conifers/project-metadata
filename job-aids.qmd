@@ -1,0 +1,151 @@
+# Job Aids
+
+## Google Earth Engine
+
+## Google Cloud Bucket
+
+### recursive sync from Google Cloud Bucket to MSI Global Scratch
+
+I've been using this workflow because I'm not sure there are tools to go direct to Tier 2 - so instead go to global scratch then transfer over to Tier 2.
+
+Need to make sure gsutil is installed in the location of the root directory you are using. Follow my instructions here:
+
+Then use this example:
+
+gsutil -m rsync -r -c gs://mn-lowland-conifers/ /scratch.global/jeli0026/aksdb-dem-covars/
+
+## Customizing Python Environments on MSI
+
+So...I have a problem - I need GDAL and dependencies for a number of workflows but none of the MSI python kernels ship with GDAL. So I need to create my own custom environment. Here is how I eventually did that. First, spin up an MSI virtual machine and go to terminal. 
+
+### Load MAMBA (better than CONDA for lots of packages and dependencies) and create GDAL environment (with all packages in MSI Python 3.8.3 distribution + GDAL)
+
+module load mamba
+
+mamba create -n gdalenvgeospat \
+  python=3.8 \
+  gdal \
+  ipykernel \
+  geopandas \
+  rasterio \
+  fiona \
+  shapely \
+  pyproj \
+  contextily \
+  matplotlib \
+  seaborn \
+  scikit-learn \
+  statsmodels \
+  pandas \
+  numpy \
+  scipy \
+  plotly \
+  folium \
+  branca \
+  pyreadr \
+  whitebox \
+  requests \
+  boto3 \
+  s3transfer \
+  click \
+  click-plugins \
+  cligj \
+  affine \
+  geopy \
+  jupyterlab \
+  jupyterhub \
+  notebook \
+  -c conda-forge
+
+### Manually activate your new conda environment:
+
+🛠️ Try this:
+source /common/software/install/migrated/anaconda/python3-2020.07-mamba/etc/profile.d/conda.sh
+conda activate gdalenvgeospat
+
+That will manually bootstrap the conda shell functions and activate the environment.
+
+### Make new Jupyter Environment called "Python (GDAL Conda)" that will show up on Launcher
+
+/users/2/jeli0026/.conda/envs/gdalenvgeospat/bin/python -m ipykernel install --user --name gdalenvgeospat --display-name "Python 3.8 (GDAL Geospatial)"
+
+### Not sure if that spun up or if I got an error - if I got an error then needed to do this: # Load GDAL
+module load gdal/3.7.0-gcc-8.2.0-tm2evb5
+
+# Activate the Python env (if you're using conda or virtualenv)
+module load python3
+
+# Install ipykernel into this environment
+python -m pip install ipykernel
+
+# Add the GDAL Python bindings to PYTHONPATH and make a kernel
+KERNEL_NAME="Python3_with_GDAL"
+PYTHONPATH=/common/software/install/spack/linux-centos7-ivybridge/gcc-8.2.0/gdal-3.7.0-*/lib64/python3.8/site-packages \
+python -m ipykernel install --user --name=$KERNEL_NAME --display-name "Python 3 + GDAL"
+
+ok - I did that went back to the launcher and launched python 3 + gdal. Here is what happened: from osgeo import gdal
+print("GDAL version:", gdal.__version__)
+​
+---------------------------------------------------------------------------
+ModuleNotFoundError                       Traceback (most recent call last)
+<ipython-input-1-9b1bb86b9b75> in <module>
+----> 1 from osgeo import gdal
+      2 print("GDAL version:", gdal.__version__)
+
+ModuleNotFoundError: No module named 'osgeo'
+ChatGPT said:
+Thanks for testing that — you're super close! This just confirms that your kernel is working, but it doesn’t yet see the GDAL Python bindings because the PYTHONPATH we used during install doesn’t automatically carry over into the runtime environment of the Jupyter kernel.
+
+No worries — here's how to fix it!
+
+✅ Fix: Add GDAL Path to the Kernel JSON
+
+Each Jupyter kernel has a little kernel.json file you can modify to set environment variables like PYTHONPATH.
+
+Let’s edit your new kernel to tell it where the osgeo bindings live.
+
+🛠️ Step-by-step
+1. Find the full GDAL site-packages path
+
+Run this to list the real install folder (no wildcards):
+
+ls /common/software/install/spack/linux-centos7-ivybridge/gcc-8.2.0/ | grep gdal
+You’ll get something like:
+
+gdal-3.7.0-tm2evb53ggcsd2yme3nuommfvlrmfosq
+
+Then build the full path:
+
+export GDAL_PY_PATH=/common/software/install/spack/linux-centos7-ivybridge/gcc-8.2.0/gdal-3.7.0-tm2evb53ggcsd2yme3nuommfvlrmfosq/lib64/python3.8/site-packages
+
+2. Locate the kernel directory
+
+cd ~/.local/share/jupyter/kernels/python3_with_gdal
+
+You’ll see a kernel.json file there.
+
+3. Edit kernel.json to set PYTHONPATH
+
+Open the file with nano or vim:
+
+nano kernel.json
+And modify it like this:
+
+{
+ "argv": [
+  "/usr/bin/python3",
+  "-m",
+  "ipykernel_launcher",
+  "-f",
+  "{connection_file}"
+ ],
+ "display_name": "Python 3 + GDAL",
+ "language": "python",
+ "env": {
+   "PYTHONPATH": "/common/software/install/spack/linux-centos7-ivybridge/gcc-8.2.0/gdal-3.7.0-<your-hash>/lib64/python3.8/site-packages"
+ }
+}
+Replace /usr/bin/python3 with the actual Python path if you're using something else (check with which python)
+Save and exit (Ctrl+O, Enter, Ctrl+X in nano).
+
+Now it will show up in your Launcher!!!!!
